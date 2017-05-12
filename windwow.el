@@ -30,7 +30,7 @@
                                        window 'window))
              buffers (window-list)))
 
-(-load-buffer-list '("*scratch*" "*Messages*"))
+;;(-load-buffer-list '("*scratch*" "*Messages*"))
 
 (defun get-buffer-list-name (buffers)
   (mapconcat 'identity buffers " "))
@@ -75,23 +75,27 @@
 
 (get-split-window-commands (current-frame-data))
 (current-frame-data)
-'(119 31 (119 119) (16 15))
+
+(get-split-window-commands '(128 33
+                                 (64 64)
+                                 (33 33)))
 
 (defun get-split-window-commands-recur (window-config matches commands)
     ;; more than one window
-    (if (cdar (cddr window-config))
-        (let ((matches (get-possible-splits window-config)))
-          (cl-loop for match in matches do
-                   (let ((new-set (remove-from-list match matches))
-                         (direction (car match))
-                         (new-window-config (add-to-config (create-new-window match)
-                                                           (remove-from-config match window-config))))
-                     (let ((result (get-split-window-commands-recur
-                                    new-window-config
-                                    new-set
-                                    (cons direction commands))))
-                       (when result
-                         (cl-return result))))))
+  (if (cdar (cddr window-config))
+      (let ((matches (get-possible-splits window-config)))
+        (cl-loop for match in matches do
+                 (let ((new-set (remove-from-list match matches))
+                       (direction (car match))
+                       (new-window-config (add-to-config (create-new-window match)
+                                                         (remove-from-config match window-config))))
+                   ;; check for valid window-config here?
+                   (let ((result (get-split-window-commands-recur
+                                  new-window-config
+                                  new-set
+                                  (cons direction commands))))
+                     (when result
+                       (cl-return result))))))
       commands))
 
 (defun add-to-config (window-pair config)
@@ -120,7 +124,7 @@
         (cons (car config) (cons (cadr config) removed))))))
 
 (defun create-new-window (split-bundle)
-  (if (eql 'horizontal (car split-bundle))
+  (if (eql 'vertical (car split-bundle))
       (let ((sum-cell (cadr split-bundle)))
         (cons (+ (car sum-cell) (cdr sum-cell))
               (cl-caaddr split-bundle)))
@@ -134,20 +138,40 @@
 ;; add in max value filtering (don't use it if it's impossibly tall)
 (defun get-possible-splits (window-config)
   "return list of splits and windows from window-config"
-  (let* ((windows (cddr window-config))
-         (horiz (car windows))
-         (vert (cadr windows)))
-    (get-possible-splits-recur horiz vert nil)))
+  (let ((windows (cddr window-config))
+        (h-max (car window-config))
+        (v-max (cadr window-config)))
+    (let ((horiz (car windows))
+          (vert (cadr windows)))
+      (get-possible-splits-recur horiz vert h-max v-max nil))))
 
-(defun get-possible-splits-recur (horiz vert directions-and-windows)
+(get-possible-splits '(128 33 (64 64) (33 33)))
+
+(defun get-possible-splits-recur (horiz vert h-max v-max directions-and-windows)
   (if horiz
-    (let ((h-matches (get-match-indices (car horiz) (cdr horiz)))
-          (v-matches (get-match-indices (car vert) (cdr vert))))
-      (let ((h-set (build-sets h-matches horiz vert 'vertical))
-            (v-set (build-sets v-matches horiz vert 'horizontal)))
-        (get-possible-splits-recur (cdr horiz) (cdr vert)
-                                   (append directions-and-windows h-set v-set))))
+      (let ((h-matches (get-match-indices (car horiz) (cdr horiz) vert v-max))
+            (v-matches (get-match-indices (car vert) (cdr vert) horiz h-max)))
+        (let ((h-set (build-sets h-matches horiz vert 'horizontal))
+              (v-set (build-sets v-matches horiz vert 'vertical)))
+          (get-possible-splits-recur (cdr horiz) (cdr vert) h-max v-max
+                                     (append directions-and-windows h-set v-set))))
     directions-and-windows))
+
+(get-match-indices 33 '(33) '(64 64) 128)
+
+(defun get-match-indices (elem coll compare-coll compare-max)
+  (get-match-indices-recur elem coll 0 '() compare-coll compare-max))
+
+(defun get-match-indices-recur (elem coll index indices compare-coll compare-max)
+  (if coll
+      (get-match-indices-recur elem (cdr coll) (+ 1 index)
+                               (if (and (equal elem (car coll))
+                                        (<= (+ (car compare-coll) (nth (+ 1 index) compare-coll))
+                                           compare-max))
+                                   (cons index indices)
+                                 indices)
+                               compare-coll compare-max)
+    indices))
 
 ;; return value '((split-direction '(h1 h2) (v1 v2)) ... )
 (defun build-sets (indices h-set v-set direction)
@@ -187,14 +211,3 @@
                            (if check index index-return)
                            (if check (car l) current)))
     (cons current index-return)))
-
-(defun get-match-indices (elem coll)
-  (get-match-indices-recur elem coll 0 '()))
-
-(defun get-match-indices-recur (elem coll index indices)
-  (if coll
-      (get-match-indices-recur elem (cdr coll) (+ 1 index)
-                             (if (equal elem (car coll))
-                                 (cons index indices)
-                               indices))
-    indices))
