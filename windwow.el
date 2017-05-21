@@ -21,6 +21,42 @@
 
 (defvar list-of-buffer-lists '())
 (defvar list-of-window-configs '())
+(defvar buffer-persistence-file-name)
+(defvar window-persistence-file-name)
+
+(setq buffer-persistence-file-name
+  (expand-file-name "windwow-persist-buffer.eld"
+                    user-emacs-directory))
+(setq window-persistence-file-name
+  (expand-file-name "windwow-persist-window.eld"
+                    user-emacs-directory))
+
+;; persisting the data structures -> based on projectile.el
+(defun save-to-file (data filename)
+  (when (file-writable-p filename)
+    (with-temp-file filename
+      (insert (let (print-length) (prin1-to-string data))))))
+
+(defun read-from-file (filename)
+  (when (file-exists-p filename)
+    (with-temp-buffer
+      (insert-file-contents filename)
+      (read (buffer-string)))))
+
+(defun init-vars ()
+  (setq list-of-buffer-lists
+        (read-from-file buffer-persistence-file-name))
+  (setq list-of-window-configs
+        (read-from-file window-persistence-file-name)))
+
+(defun persist-vars ()
+  (save-to-file list-of-buffer-lists
+                buffer-persistence-file-name)
+  (save-to-file list-of-window-configs
+                window-persistence-file-name))
+
+(init-vars)
+(add-hook 'kill-emacs-hook 'persist-vars)
 
 ;; buffer stuff
 (defun save-buffer-group () '())
