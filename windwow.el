@@ -1,10 +1,20 @@
 ;; example for frame data structure
 (defun current-frame-data ()
-  (let ((horiz-frame (frame-total-cols))
-        (vert-frame (frame-total-lines))
-        (horiz-dimens (-map 'window-total-width (window-list)))
-        (vert-dimens (-map 'window-total-height (window-list))))
-    (list (- horiz-frame 1) (- vert-frame 1) horiz-dimens vert-dimens)))
+  (let ((parent (get-top-window-parent)))
+    (let ((horiz-frame (window-total-width parent))
+          (vert-frame (window-total-height parent))
+          (horiz-dimens (-map 'window-total-width (window-list)))
+          (vert-dimens (-map 'window-total-height (window-list))))
+      (list horiz-frame vert-frame horiz-dimens vert-dimens))))
+
+(defun get-top-window-parent ()
+  (get-top-window-parent-recur (selected-window)))
+
+(defun get-top-window-parent-recur (window)
+  (let ((parent (window-parent window)))
+    (if parent
+        (get-top-window-parent-recur parent)
+      window)))
 
 (require 'dash)
 (require 'cl-lib)
@@ -211,3 +221,67 @@
                            (if check index index-return)
                            (if check (car l) current)))
     (cons current index-return)))
+
+;; recreate window commands with splits
+(defun get-switch-and-split-commands (commands window-config)
+  (let ((horiz (car window-config))
+        (vertical (cadr window-config))
+        (h-list (cl-caddr window-config))
+        (v-list (cl-cadddr window-config)))
+    (get-switch-and-split-commands-recur commands
+                                         nil
+                                         (list (cons horiz vertical))
+                                         0
+                                         (-zip-pair h-list v-list))))
+
+(defun get-switch-and-split-commands-recur (commands new-commands window-list index final-list)
+  (if (and (is-empty commands)
+           (is-empty final-list))
+      new-commands
+    (let ((current-window (nth index window-list)))
+      (if (member current-window final-list)
+          (get-switch-and-split-commands-recur commands
+                                               (cons 'switch new-commands)
+                                               window-list
+                                               (+ 1 index)
+                                               (remove-from-list current-window final-list))
+        (let ((new-window-pair (split-window-pair-in-direction (car commands)
+                                                               current-window)))
+          (get-switch-and-split-commands-recur (cdr commands)
+                                               (cons (car commands) new-commands)
+                                               (insert-split-window-at-index index
+                                                                             new-window-pair
+                                                                             window-list)
+                                               index
+                                               final-list))))))
+
+(defun insert-split-window-at-index (index window-pair window-list)
+  (-insert-at index (car window-pair)
+              (-replace-at index (cadr window-pair) window-list)))
+
+(defun split-window-pair-in-direction (direction window)
+  (if (eq direction 'vertical)
+      (let ((splitted (split-dimension (car window))))
+        (list (cons (car splitted) (cdr window))
+              (cons (cdr splitted) (cdr window))))
+    (let ((splitted (split-dimension (cdr window))))
+      (list (cons (car window) (car splitted))
+            (cons (car window) (cdr splitted))))))
+
+(defun split-dimension (dimension)
+  (if (is-even dimension)
+      (let ((half (/ dimension 2)))
+        (cons half half))
+    (let ((bigger-half (/ (+ dimension 1) 2)))
+      (cons bigger-half
+            (- bigger-half 1)))))
+
+(defun is-even (number)
+  (= (% number 2) 0))
+
+(defun is-empty (dis-list)
+  (if (and (listp dis-list)
+           (car dis-list))
+      nil
+    t))
+
