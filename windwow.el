@@ -222,7 +222,18 @@
     (cons current index-return)))
 
 ;; recreate window commands with splits
+(defun get-usable-commands (window-config)
+  (let ((commands (get-split-window-commands window-config)))
+    (get-switch-and-split-commands commands window-config)))
+
 (defun get-switch-and-split-commands (commands window-config)
+  (let ((switch-commands (-get-switch-and-split-commands commands
+                                                         window-config)))
+    (reverse (-drop-while (lambda (command)
+                            (eq command 'switch)) switch-commands))))
+
+(defun -get-switch-and-split-commands (commands window-config)
+  "commands are in reverse order and have nils"
   (let ((horiz (car window-config))
         (vertical (cadr window-config))
         (h-list (cl-caddr window-config))
@@ -284,3 +295,47 @@
       nil
     t))
 
+;; execute functions
+(defun -load-split-window-commands (commands)
+  (delete-other-windows)
+  (execute-split-window-commands commands))
+
+(defun execute-split-window-commands (commands)
+  (-each commands (lambda (command)
+                    (cond ((eql command 'vertical)
+                           (split-window nil nil 'right))
+                          ((eql command 'horizontal)
+                           (split-window nil nil 'below))
+                          ((eql command 'switch)
+                           (other-window 1))))))
+
+;; window functions to bind
+(defun save-split-window-commands (name)
+  (interactive
+   (list (completing-read "Enter split window command list name: "
+                          list-of-window-commands)))
+  (let ((window-commands (get-usable-commands (current-frame-data))))
+    (--save-split-window-commands name window-commands)))
+
+(defun --save-split-window-commands (name window-commands)
+  (setf list-of-window-commands
+        (cons (cons name window-commands) list-of-window-commands)))
+
+(defun load-split-window-commands (prompt)
+  (interactive
+   (list (completing-read "Load split window command list: "
+                          list-of-window-commands
+                          nil t "")))
+  (-load-split-window-commands (cdr (assoc prompt list-of-window-commands))))
+
+;; buffer and window functions
+(defun load-window-commands-and-buffer-list (commands buffers)
+  (interactive
+   (let* ((split-commands-name (completing-read "choose window commands: " list-of-window-commands nil t ""))
+          (list-name (completing-read "choose buffer-list: " list-of-buffer-lists nil t "")))
+     (list (assoc split-commands-name
+                  list-of-window-commands)
+           (assoc list-name
+                  list-of-buffer-lists))))
+  (-load-split-window-commands commands)
+  (-load-buffer-list buffers))
