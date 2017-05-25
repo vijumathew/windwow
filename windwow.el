@@ -20,7 +20,7 @@
 (require 'cl-lib)
 
 (defvar list-of-buffer-lists '())
-(defvar list-of-window-configs '())
+(defvar list-of-window-commands '())
 (defvar buffer-persistence-file-name)
 (defvar window-persistence-file-name)
 
@@ -59,12 +59,6 @@
 (add-hook 'kill-emacs-hook 'persist-vars)
 
 ;; buffer stuff
-(defun save-buffer-group () '())
-
-(defun switch-buffer-group () '())
-(defun switch-to-buffer-from-buffer-group () '())
-
-;; possibly use 'buffer-file-name for saving
 (defun get-buffer-list ()
   (cl-mapcar (lambda (window)
                (buffer-name (window-buffer window)))
@@ -76,21 +70,14 @@
                                        window 'window))
              buffers (window-list)))
 
-;;(-load-buffer-list '("*scratch*" "*Messages*"))
-
 (defun get-buffer-list-name (buffers)
   (mapconcat 'identity buffers " "))
  
-(get-buffer-list-name (get-buffer-list))
-
-;; check flag for persisting - default is off
-
-;; make sure saving overwrites cons cell with same var name
-;; what is best name?
+;; buffer functions to bind
 (defun save-buffer-list (name)
   (interactive
    (list (completing-read "Enter buffer list name: "
-                          b)))
+                          list-of-buffer-lists)))
   (let ((buffer-list (get-buffer-list)))
     (--save-buffer-list name buffer-list)))
 
@@ -99,19 +86,21 @@
     (--save-buffer-list (get-buffer-list-name buffer-list) buffer-list)))
 
 (defun --save-buffer-list (name buffers)
-  (setf b (cons (cons name buffers) b)))
+  (setf list-of-buffer-lists
+        (cons (cons name buffers) list-of-buffer-lists)))
 
 (defun load-buffer-list (prompt)
   (interactive
    (list (completing-read "Load buffer list: "
-                          b
+                          list-of-buffer-lists
                           nil t "")))
-  (-load-buffer-list (cdr (assoc prompt b))))
+  (-load-buffer-list (cdr (assoc prompt list-of-buffer-lists))))
 
 (defun load-buffer-from-list (buffer-list buffer)
   (interactive
-   (let* ((list-name (completing-read "choose buffer-list: " b))
-          (b-cur (completing-read "choose buffer: " (cdr (assoc list-name b)))))
+   (let* ((list-name (completing-read "choose buffer-list: " list-of-buffer-lists))
+          (b-cur (completing-read "choose buffer: " (cdr (assoc list-name
+                                                                list-of-buffer-lists)))))
       (list list-name b-cur)))
   (switch-to-buffer buffer))
 
