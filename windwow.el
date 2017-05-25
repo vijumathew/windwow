@@ -1,21 +1,3 @@
-;; example for frame data structure
-(defun current-frame-data ()
-  (let ((parent (get-top-window-parent)))
-    (let ((horiz-frame (window-total-width parent))
-          (vert-frame (window-total-height parent))
-          (horiz-dimens (-map 'window-total-width (window-list)))
-          (vert-dimens (-map 'window-total-height (window-list))))
-      (list horiz-frame vert-frame horiz-dimens vert-dimens))))
-
-(defun get-top-window-parent ()
-  (get-top-window-parent-recur (selected-window)))
-
-(defun get-top-window-parent-recur (window)
-  (let ((parent (window-parent window)))
-    (if parent
-        (get-top-window-parent-recur parent)
-      window)))
-
 (require 'dash)
 (require 'cl-lib)
 
@@ -105,15 +87,25 @@
   (switch-to-buffer buffer))
 
 ;; window stuff
+(defun get-top-window-parent ()
+  (get-top-window-parent-recur (selected-window)))
+
+(defun get-top-window-parent-recur (window)
+  (let ((parent (window-parent window)))
+    (if parent
+        (get-top-window-parent-recur parent)
+      window)))
+
+(defun current-frame-data ()
+  (let ((parent (get-top-window-parent)))
+    (let ((horiz-frame (window-total-width parent))
+          (vert-frame (window-total-height parent))
+          (horiz-dimens (-map 'window-total-width (window-list)))
+          (vert-dimens (-map 'window-total-height (window-list))))
+      (list horiz-frame vert-frame horiz-dimens vert-dimens))))
+
 (defun get-split-window-commands (window-config)
   (get-split-window-commands-recur window-config nil nil))
-
-(get-split-window-commands (current-frame-data))
-(current-frame-data)
-
-(get-split-window-commands '(128 33
-                                 (64 64)
-                                 (33 33)))
 
 (defun get-split-window-commands-recur (window-config matches commands)
     ;; more than one window
