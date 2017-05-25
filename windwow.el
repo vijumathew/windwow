@@ -172,8 +172,6 @@
           (vert (cadr windows)))
       (get-possible-splits-recur horiz vert h-max v-max nil))))
 
-(get-possible-splits '(128 33 (64 64) (33 33)))
-
 (defun get-possible-splits-recur (horiz vert h-max v-max directions-and-windows)
   (if horiz
       (let ((h-matches (get-match-indices (car horiz) (cdr horiz) vert v-max))
@@ -183,8 +181,6 @@
           (get-possible-splits-recur (cdr horiz) (cdr vert) h-max v-max
                                      (append directions-and-windows h-set v-set))))
     directions-and-windows))
-
-(get-match-indices 33 '(33) '(64 64) 128)
 
 (defun get-match-indices (elem coll compare-coll compare-max)
   (get-match-indices-recur elem coll 0 '() compare-coll compare-max))
@@ -211,20 +207,6 @@
 
 (defun remove-from-list (my-val list)
   (-remove-first (lambda (x) (equal my-val x)) list))
-
-(defun merge-sorted-sets (&rest lists)
-  (merge-sorted-sets-recur nil lists))
-
-(defun merge-sorted-sets-recur (merged lists)
-  (if (car lists)
-      (let ((large (largest-val (mapcar 'car lists))))
-        (let ((largest-val (car large))
-              (largest-index (cdr large)))
-          (let ((new-list (cdr (nth largest-index lists)))
-                (new-lists (-non-nil
-                            (-remove-at largest-index lists))))
-            (merge-sorted-sets-recur (cons largest-val merged) (if new-list (cons new-list new-lists) new-lists)))))
-  merged))
 
 (defun largest-val (l)
   (if l
