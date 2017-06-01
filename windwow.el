@@ -87,21 +87,12 @@
   (switch-to-buffer buffer))
 
 ;; window stuff
-(defun get-top-window-parent ()
-  (get-top-window-parent-recur (selected-window)))
-
-(defun get-top-window-parent-recur (window)
-  (let ((parent (window-parent window)))
-    (if parent
-        (get-top-window-parent-recur parent)
-      window)))
-
 (defun current-frame-data ()
-  (let ((parent (get-top-window-parent)))
+  (let ((parent (frame-root-window)))
     (let ((horiz-frame (window-total-width parent))
           (vert-frame (window-total-height parent))
-          (horiz-dimens (-map 'window-total-width (window-list)))
-          (vert-dimens (-map 'window-total-height (window-list))))
+          (horiz-dimens (-map 'window-total-width (window-list nil nil (frame-first-window))))
+          (vert-dimens (-map 'window-total-height (window-list nil nil (frame-first-window)))))
       (list horiz-frame vert-frame horiz-dimens vert-dimens))))
 
 (defun get-split-window-commands (window-config)
