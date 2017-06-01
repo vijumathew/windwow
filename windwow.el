@@ -111,7 +111,7 @@
                    (let ((result (get-split-window-commands-recur
                                   new-window-config
                                   new-set
-                                  (cons direction commands))))
+                                  (cons match commands))))
                      (when result
                        (cl-return result))))))
       commands))
@@ -179,21 +179,28 @@
 (defun get-match-indices-recur (elem coll index indices compare-coll compare-max)
   (if coll
       (get-match-indices-recur elem (cdr coll) (+ 1 index)
-                               (if (and (equal elem (car coll))
-                                        (<= (+ (car compare-coll) (nth (+ 1 index) compare-coll))
-                                           compare-max))
+                               (if (let ((compare-elem-1 (car compare-coll))
+                                         (compare-elem-2 (nth (+ 1 index) compare-coll)))
+                                     (and (equal elem (car coll))
+                                          (<= (+ compare-elem-1 compare-elem-2) compare-max)
+                                          (<= (abs (- compare-elem-1 compare-elem-2))
+                                              2))) ;; split window only
                                    (cons index indices)
                                  indices)
                                compare-coll compare-max)
     indices))
+
+(defun ordered-cons-cell (v1 v2)
+  (cons (max v1 v2)
+        (min v1 v2)))
 
 ;; return value '((split-direction '(h1 h2) (v1 v2)) ... )
 (defun build-sets (indices h-set v-set direction)
   (-map (lambda (index)
           (let ((h-val (nth (+ 1 index) h-set))
                 (v-val (nth (+ 1 index) v-set)))
-            (list direction (cons (car h-set) h-val)
-                  (cons (car v-set) v-val))))
+            (list direction (ordered-cons-cell (car h-set) h-val)
+                  (ordered-cons-cell (car v-set) v-val))))
         indices))
 
 (defun remove-from-list (my-val list)
@@ -217,44 +224,43 @@
   (let ((commands (get-split-window-commands window-config)))
     (get-switch-and-split-commands commands window-config)))
 
-(defun get-switch-and-split-commands (commands window-config)
-  (let ((switch-commands (-get-switch-and-split-commands commands
-                                                         window-config)))
-    (reverse (-drop-while (lambda (command)
-                            (eq command 'switch)) switch-commands))))
+(defun get-switch-and-split-commands (matches window-config)
+  "matches are '(direction (h . h) (v . v))"
+  (reverse (-parse-matches matches window-config)))
 
-(defun -get-switch-and-split-commands (commands window-config)
-  "commands are in reverse order and have nils"
-  (let ((horiz (car window-config))
-        (vertical (cadr window-config))
-        (h-list (cl-caddr window-config))
-        (v-list (cl-cadddr window-config)))
-    (get-switch-and-split-commands-recur commands
-                                         nil
-                                         (list (cons horiz vertical))
-                                         0
-                                         (-zip-pair h-list v-list))))
+(defun -parse-matches (matches window-config)
+  "matches are '(direction (h . h) (v . v))"
+  (parse-matches-recur matches nil 0 (list (cons (car window-config)
+                                                 (cadr window-config)))))
 
-(defun get-switch-and-split-commands-recur (commands new-commands window-list index final-list)
-  (if (and (is-empty commands)
-           (is-empty final-list))
-      new-commands
-    (let ((current-window (nth index window-list)))
-      (if (member current-window final-list)
-          (get-switch-and-split-commands-recur commands
-                                               (cons 'switch new-commands)
-                                               window-list
-                                               (+ 1 index)
-                                               (remove-from-list current-window final-list))
-        (let ((new-window-pair (split-window-pair-in-direction (car commands)
-                                                               current-window)))
-          (get-switch-and-split-commands-recur (cdr commands)
-                                               (cons (car commands) new-commands)
-                                               (insert-split-window-at-index index
-                                                                             new-window-pair
-                                                                             window-list)
-                                               index
-                                               final-list))))))
+(defun parse-matches-recur (matches commands index window-list)
+  (if (is-empty matches)
+      commands
+    (let* ((current (nth index window-list))
+           (match (car matches))
+           (command (car match))
+           (pair (split-window-pair-in-direction command current)))
+      (if (equal pair (merge-pair (cdr match)))
+          (parse-matches-recur (cdr matches)
+                               (cons command commands)
+                               index
+                               (insert-split-window-at-index index pair window-list))
+        (parse-matches-recur matches
+                             (cons 'switch commands)
+                             (increment-window-index index window-list)
+                             window-list)))))
+
+(defun merge-pair (cells)
+  (let ((cell-1 (car cells))
+        (cell-2 (cadr cells)))
+    (list (cons (car cell-1)
+                (car cell-2))
+          (cons (cdr cell-1)
+                (cdr cell-2)))))
+
+(defun increment-window-index (index window-list)
+  "increments with mod"
+  (mod (+ 1 index) (length window-list)))
 
 (defun insert-split-window-at-index (index window-pair window-list)
   (-insert-at index (car window-pair)
