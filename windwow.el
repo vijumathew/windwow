@@ -1,3 +1,5 @@
+;; Package-Requires: ((dash "2.13.0"))
+
 (require 'dash)
 (require 'cl-lib)
 
@@ -293,7 +295,7 @@
     t))
 
 ;; execute functions
-(defun -load-split-window-commands (commands)
+(defun -load-window-configuration (commands)
   (delete-other-windows)
   (execute-split-window-commands commands))
 
@@ -307,26 +309,26 @@
                            (other-window 1))))))
 
 ;; window functions to bind
-(defun save-split-window-commands (name)
+(defun save-window-configuration (name)
   (interactive
    (list (completing-read "Enter split window command list name: "
                           list-of-window-commands)))
   (let ((window-commands (get-usable-commands (current-frame-data))))
-    (--save-split-window-commands name window-commands)))
+    (--save-window-configuration name window-commands)))
 
-(defun --save-split-window-commands (name window-commands)
+(defun --save-window-configuration (name window-commands)
   (setf list-of-window-commands
         (cons (cons name window-commands) list-of-window-commands)))
 
-(defun load-split-window-commands (prompt)
+(defun load-window-configuration (prompt)
   (interactive
    (list (completing-read "Load split window command list: "
                           list-of-window-commands
                           nil t "")))
-  (-load-split-window-commands (cdr (assoc prompt list-of-window-commands))))
+  (-load-window-configuration (cdr (assoc prompt list-of-window-commands))))
 
 ;; buffer and window functions
-(defun load-window-commands-and-buffer-list (commands buffers)
+(defun load-window-configuration-and-buffer-list (commands buffers)
   (interactive
    (let* ((split-commands-name (completing-read "choose window commands: " list-of-window-commands nil t ""))
           (list-name (completing-read "choose buffer-list: " list-of-buffer-lists nil t "")))
@@ -334,5 +336,5 @@
                   list-of-window-commands)
            (assoc list-name
                   list-of-buffer-lists))))
-  (-load-split-window-commands commands)
+  (-load-window-configuration commands)
   (-load-buffer-list buffers))
