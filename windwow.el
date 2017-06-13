@@ -78,14 +78,17 @@
   (setq list-of-window-configs
         (read-from-file window-persistence-file-name)))
 
-(defun persist-vars ()
+(defun persist-vars-function ()
   (save-to-file list-of-buffer-lists
                 buffer-persistence-file-name)
   (save-to-file list-of-window-configs
                 window-persistence-file-name))
 
 (init-vars)
-(add-hook 'kill-emacs-hook 'persist-vars)
+(add-hook 'kill-emacs-hook 'persist-vars-function)
+
+(defun windwow-unload-function ()
+  (remove-hook 'kill-emacs-hook 'persist-vars-function))
 
 ;; buffer stuff
 (defun get-buffer-list ()
@@ -393,4 +396,5 @@
   (-load-window-configuration commands)
   (-load-buffer-list buffers))
 
+(provide 'windwow)
 ;;; windwow.el ends here
