@@ -11,16 +11,16 @@ This package simplifies workspace management for Emacs. With just a few function
 A buffer configuration is a list of buffers and a window configuration is an arrangement of windows in a frame. Right now window configurations created only with split and switch commands are supported. These functions can be called interactively (via `M-x`) or from keybindings.
 
 ### Buffer ###
-  * `save-buffer-list` - saves current buffers and prompts for name
-  * `load-buffer-list` - loads a previously saved buffer list
-  * `load-buffer-from-list` - loads a buffer from a saved buffer list
+  * `windwow-save-buffer-list` - saves current buffers and prompts for name
+  * `windwow-load-buffer-list` - loads a previously saved buffer list
+  * `windwow-load-buffer-from-list` - loads a buffer from a saved buffer list
 
 ### Window ###
-  * `save-window-configuration` - saves current window configuration
-  * `load-window-configuration` - loads a previously saved window configuration
+  * `windwow-save-window-configuration` - saves current window configuration
+  * `windwow-load-window-configuration` - loads a previously saved window configuration
 
 ### Buffer and window ###
-  * `load-window-configuration-and-buffer-list` - loads a window configuration and a buffer list 
+  * `windwow-load-window-configuration-and-buffer-list` - loads a window configuration and a buffer list 
 
 ## Roadmap ##
   * Support frames with manually resized windows
