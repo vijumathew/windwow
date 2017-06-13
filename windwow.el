@@ -1,4 +1,49 @@
-;; Package-Requires: ((dash "2.13.0"))
+;;; windwow.el --- simple workspace management
+
+;; Copyright (C) 2017 Viju Mathew
+
+;; Author: Viju Mathew <viju.jm@gmail.com>]
+;; Created: 12 May 2017
+;; Package-Requires: ((dash "2.13.0") (cl-lib "0.6.1"))
+;; Keywords: frames
+;; Homepage: github.com/vijumathew/windwow
+
+;; This program is free software; you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+
+;; This program is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+
+;; You should have received a copy of the GNU General Public License
+;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+;;; Commentary:
+
+;; This package provides a small collection of functions for saving and
+;; loading window and buffer configurations. A buffer configuration is
+;; a list of buffers and a window configuration is an arrangement of windows
+;; in a frame. Right now window configurations created only with split
+;; and switch commands are supported. These functions can be called interactively
+;; (via `M-x`) or from keybindings.
+
+;; ## Functions
+;; ### Buffer
+;;  - `save-buffer-list` - saves current buffers and prompts for name
+;;  - `load-buffer-list` - loads a previously saved buffer list
+;;  - `load-buffer-from-list` - loads a buffer from a saved buffer list
+;;
+;; ### Window
+;;  - `save-window-configuration` - saves current window configuration
+;;  - `load-window-configuration` - loads a previously saved window configuration
+;;
+;; ### Buffer and window
+;;  - `load-window-configuration-and-buffer-list` - loads a window configuration and a buffer list 
+
+;;; Code:
 
 (require 'dash)
 (require 'cl-lib)
@@ -58,7 +103,9 @@
   (mapconcat 'identity buffers " "))
  
 ;; buffer functions to bind
+;;;###autoload
 (defun save-buffer-list (name)
+  "saves current buffers and prompts for name"
   (interactive
    (list (completing-read "Enter buffer list name: "
                           list-of-buffer-lists)))
@@ -73,14 +120,18 @@
   (setf list-of-buffer-lists
         (cons (cons name buffers) list-of-buffer-lists)))
 
+;;;###autoload
 (defun load-buffer-list (prompt)
+  "loads a previously saved buffer list"
   (interactive
    (list (completing-read "Load buffer list: "
                           list-of-buffer-lists
                           nil t "")))
   (-load-buffer-list (cdr (assoc prompt list-of-buffer-lists))))
 
+;;;###autoload
 (defun load-buffer-from-list (buffer-list buffer)
+  "loads a buffer from a saved buffer list"
   (interactive
    (let* ((list-name (completing-read "choose buffer-list: " list-of-buffer-lists))
           (b-cur (completing-read "choose buffer: " (cdr (assoc list-name
@@ -151,9 +202,6 @@
     (let ((sum-cell (cl-caddr split-bundle)))
       (cons (cl-caadr split-bundle)
             (+ (car sum-cell) (cdr sum-cell))))))
-
-;; window config '(v h '(h1 h2 ...) '(v1 v2 ...))
-;; return value '((split-direction '(h1 h2) (v1 v2)) ... )
 
 ;; add in max value filtering (don't use it if it's impossibly tall)
 (defun get-possible-splits (window-config)
@@ -309,7 +357,9 @@
                            (other-window 1))))))
 
 ;; window functions to bind
+;;;###autoload
 (defun save-window-configuration (name)
+  "saves current window configuration"
   (interactive
    (list (completing-read "Enter split window command list name: "
                           list-of-window-commands)))
@@ -320,7 +370,9 @@
   (setf list-of-window-commands
         (cons (cons name window-commands) list-of-window-commands)))
 
+;;;###autoload
 (defun load-window-configuration (prompt)
+  "loads a previously saved window configuration"
   (interactive
    (list (completing-read "Load split window command list: "
                           list-of-window-commands
@@ -328,7 +380,9 @@
   (-load-window-configuration (cdr (assoc prompt list-of-window-commands))))
 
 ;; buffer and window functions
+;;;###autoload
 (defun load-window-configuration-and-buffer-list (commands buffers)
+  "loads a window configuration and a buffer list"
   (interactive
    (let* ((split-commands-name (completing-read "choose window commands: " list-of-window-commands nil t ""))
           (list-name (completing-read "choose buffer-list: " list-of-buffer-lists nil t "")))
@@ -338,3 +392,5 @@
                   list-of-buffer-lists))))
   (-load-window-configuration commands)
   (-load-buffer-list buffers))
+
+;;; windwow.el ends here
