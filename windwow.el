@@ -339,8 +339,10 @@
 
 ;; execute functions
 (defun windwow-load-window-configuration-commands (commands)
-  (delete-other-windows)
-  (windwow-execute-split-window-commands commands))
+  (let ((buffers (windwow-get-buffer-list)))
+    (delete-other-windows)
+    (windwow-execute-split-window-commands commands)
+    (windwow-load-buffer-list-buffers buffers)))
 
 (defun windwow-execute-split-window-commands (commands)
   (-each commands (lambda (command)
