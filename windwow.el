@@ -94,13 +94,13 @@
 (defun windwow-get-buffer-list ()
   (cl-mapcar (lambda (window)
                (buffer-name (window-buffer window)))
-             (window-list)))
+             (window-list nil nil (frame-first-window))))
 
 (defun windwow-load-buffer-list-buffers (buffers)
   (cl-mapcar (lambda (buffer window)
                (window--display-buffer (get-buffer buffer)
                                        window 'window))
-             buffers (window-list)))
+             buffers (window-list nil nil (frame-first-window))))
 
 (defun windwow-get-buffer-list-name (buffers)
   (mapconcat 'identity buffers " "))
