@@ -44,7 +44,6 @@
 ;;  - `windwow-load-window-configuration-and-buffer-list` - loads a window configuration and a buffer list
 
 ;;; Code:
-
 (require 'dash)
 (require 'cl-lib)
 
@@ -54,11 +53,12 @@
 (defvar windwow-window-persistence-file-name)
 
 (setq windwow-buffer-persistence-file-name
-  (expand-file-name "windwow-persist-buffer.eld"
-                    user-emacs-directory))
+      (expand-file-name "windwow-persist-buffer.eld"
+                        user-emacs-directory))
+
 (setq windwow-window-persistence-file-name
-  (expand-file-name "windwow-persist-window.eld"
-                    user-emacs-directory))
+      (expand-file-name "windwow-persist-window.eld"
+                        user-emacs-directory))
 
 ;; persisting the data structures -> based on projectile.el
 (defun windwow-save-to-file (data filename)
@@ -104,7 +104,7 @@
 
 (defun windwow-get-buffer-list-name (buffers)
   (mapconcat 'identity buffers " "))
- 
+
 ;; buffer functions to bind
 ;;;###autoload
 (defun windwow-save-buffer-list (name)
@@ -143,7 +143,7 @@
    (let* ((list-name (completing-read "choose buffer-list: " windwow-list-of-buffer-lists))
           (b-cur (completing-read "choose buffer: " (cdr (assoc list-name
                                                                 windwow-list-of-buffer-lists)))))
-      (list list-name b-cur)))
+     (list list-name b-cur)))
   (switch-to-buffer buffer))
 
 ;; window stuff
@@ -159,14 +159,15 @@
   (windwow-get-split-window-commands-recur window-config nil nil))
 
 (defun windwow-get-split-window-commands-recur (window-config matches commands)
-    ;; more than one window
+  ;; more than one window
   (if (cdar (cddr window-config))
       (let ((matches (windwow-get-possible-splits window-config)))
         (cl-loop for match in matches do
                  (let ((new-set (windwow-remove-from-list match matches))
                        (direction (car match))
                        (new-window-config (windwow-add-to-config (windwow-create-new-window match)
-                                                         (windwow-remove-from-config match window-config))))
+                                                                 (windwow-remove-from-config
+                                                                  match window-config))))
                    ;; check for valid window-config here?
                    (let ((result (windwow-get-split-window-commands-recur
                                   new-window-config
@@ -174,7 +175,7 @@
                                   (cons match commands))))
                      (when result
                        (cl-return result))))))
-      commands))
+    commands))
 
 (defun windwow-add-to-config (window-pair config)
   (let ((first-list (cl-caddr config))
@@ -228,7 +229,7 @@
         (let ((h-set (windwow-build-sets h-matches horiz vert 'horizontal))
               (v-set (windwow-build-sets v-matches horiz vert 'vertical)))
           (windwow-get-possible-splits-recur (cdr horiz) (cdr vert) h-max v-max
-                                     (append directions-and-windows h-set v-set))))
+                                             (append directions-and-windows h-set v-set))))
     directions-and-windows))
 
 (defun windwow-get-match-indices (elem coll compare-coll compare-max)
@@ -237,15 +238,15 @@
 (defun windwow-get-match-indices-recur (elem coll index indices compare-coll compare-max)
   (if coll
       (windwow-get-match-indices-recur elem (cdr coll) (+ 1 index)
-                               (if (let ((compare-elem-1 (car compare-coll))
-                                         (compare-elem-2 (nth (+ 1 index) compare-coll)))
-                                     (and (equal elem (car coll))
-                                          (<= (+ compare-elem-1 compare-elem-2) compare-max)
-                                          (<= (abs (- compare-elem-1 compare-elem-2))
-                                              2))) ;; split window only
-                                   (cons index indices)
-                                 indices)
-                               compare-coll compare-max)
+                                       (if (let ((compare-elem-1 (car compare-coll))
+                                                 (compare-elem-2 (nth (+ 1 index) compare-coll)))
+                                             (and (equal elem (car coll))
+                                                  (<= (+ compare-elem-1 compare-elem-2) compare-max)
+                                                  (<= (abs (- compare-elem-1 compare-elem-2))
+                                                      2))) ;; split window only
+                                           (cons index indices)
+                                         indices)
+                                       compare-coll compare-max)
     indices))
 
 (defun windwow-ordered-cons-cell (v1 v2)
