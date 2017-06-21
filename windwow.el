@@ -75,13 +75,13 @@
 (defun windwow-init-vars ()
   (setq windwow-list-of-buffer-lists
         (windwow-read-from-file windwow-buffer-persistence-file-name))
-  (setq windwow-list-of-window-configs
+  (setq windwow-list-of-window-commands
         (windwow-read-from-file windwow-window-persistence-file-name)))
 
 (defun windwow-persist-vars-function ()
   (windwow-save-to-file windwow-list-of-buffer-lists
                         windwow-buffer-persistence-file-name)
-  (windwow-save-to-file windwow-list-of-window-configs
+  (windwow-save-to-file windwow-list-of-window-commands
                         windwow-window-persistence-file-name))
 
 (windwow-init-vars)
