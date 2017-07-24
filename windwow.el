@@ -25,10 +25,10 @@
 ;;; Commentary:
 
 ;; This package provides a small collection of functions for saving and
-;; loading window and buffer configurations. A buffer configuration is
+;; loading window and buffer configurations.  A buffer configuration is
 ;; a list of buffers and a window configuration is an arrangement of windows
-;; in a frame. Right now window configurations created only with split
-;; and switch commands are supported. These functions can be called interactively
+;; in a frame.  Right now window configurations created only with split
+;; and switch commands are supported.  These functions can be called interactively
 ;; (via `M-x`) or from keybindings.
 
 ;; ## Functions
@@ -63,23 +63,27 @@
 
 ;; persisting the data structures -> based on projectile.el
 (defun windwow-save-to-file (data filename)
+  "Save DATA to FILENAME."
   (when (file-writable-p filename)
     (with-temp-file filename
       (insert (let (print-length) (prin1-to-string data))))))
 
 (defun windwow-read-from-file (filename)
+  "Return content from FILENAME."
   (when (file-exists-p filename)
     (with-temp-buffer
       (insert-file-contents filename)
       (read (buffer-string)))))
 
 (defun windwow-init-vars ()
+  "Initialize buffer and window lists."
   (setq windwow-list-of-buffer-lists
         (windwow-read-from-file windwow-buffer-persistence-file-name))
   (setq windwow-list-of-window-commands
         (windwow-read-from-file windwow-window-persistence-file-name)))
 
 (defun windwow-persist-vars-function ()
+  "Save buffer and window lists to files."
   (windwow-save-to-file windwow-list-of-buffer-lists
                         windwow-buffer-persistence-file-name)
   (windwow-save-to-file windwow-list-of-window-commands
@@ -89,27 +93,32 @@
 (add-hook 'kill-emacs-hook 'windwow-persist-vars-function)
 
 (defun windwow-unload-function ()
+  "Remove persist hook.  Called when windwow is unloaded."
   (remove-hook 'kill-emacs-hook 'windwow-persist-vars-function))
 
 ;; buffer stuff
 (defun windwow-get-buffer-list ()
+  "Get names of buffers in current frame."
   (cl-mapcar (lambda (window)
                (buffer-name (window-buffer window)))
              (window-list nil nil (frame-first-window))))
 
 (defun windwow-load-buffer-list-buffers (buffers)
+  "Switch to buffers from BUFFERS.  Ignore extra buffers."
   (cl-mapcar (lambda (buffer window)
                (window--display-buffer (get-buffer buffer)
                                        window 'window))
              buffers (window-list nil nil (frame-first-window))))
 
 (defun windwow-get-buffer-list-name (buffers)
+  "Make display name for a list of BUFFERS."
   (mapconcat 'identity buffers " "))
 
 ;; buffer functions to bind
 ;;;###autoload
 (defun windwow-save-buffer-list (name)
-  "saves current buffers and prompts for name"
+  "Save current buffers as NAME.
+Switch to this list of buffers by calling 'windwow-load-buffer-list."
   (interactive
    (list (completing-read "Enter buffer list name: "
                           windwow-list-of-buffer-lists)))
@@ -118,28 +127,31 @@
 
 ;;;###autoload
 (defun windwow-save-buffer-list-no-name ()
-  "saves current buffers as names of all buffers"
+  "Save current buffers as concatenated buffer names.
+Switch to this list of buffers by calling 'windwow-load-buffer-list."
   (interactive)
   (let ((buffer-list (windwow-get-buffer-list)))
     (windwow-save-buffer-list-args (windwow-get-buffer-list-name buffer-list)
                                    buffer-list)))
 
 (defun windwow-save-buffer-list-args (name buffers)
-  (setf windwow-list-of-buffer-lists 
+  "Store {NAME, list of BUFFERS} into state.
+Used internally by autoloaded functions."
+  (setf windwow-list-of-buffer-lists
         (cons (cons name buffers) windwow-list-of-buffer-lists)))
 
 ;;;###autoload
-(defun windwow-load-buffer-list (prompt)
-  "loads a previously saved buffer list"
+(defun windwow-load-buffer-list (buffer-list)
+  "Switch to buffers from a BUFFER-LIST that was previously saved."
   (interactive
    (list (completing-read "Load buffer list: "
                           windwow-list-of-buffer-lists
                           nil t "")))
-  (windwow-load-buffer-list-buffers (cdr (assoc prompt windwow-list-of-buffer-lists))))
+  (windwow-load-buffer-list-buffers (cdr (assoc buffer-list windwow-list-of-buffer-lists))))
 
 ;;;###autoload
 (defun windwow-load-buffer-from-list (buffer-list buffer)
-  "loads a buffer from a saved buffer list"
+  "Load BUFFER-LIST and switch to a BUFFER from that list."
   (interactive
    (let* ((list-name (completing-read "choose buffer-list: " windwow-list-of-buffer-lists))
           (b-cur (completing-read "choose buffer: " (cdr (assoc list-name
@@ -149,6 +161,8 @@
 
 ;; window stuff
 (defun windwow-current-frame-data ()
+  "Get dimensions of windows in current frame.
+Saved as '(frame-width frame-height (list of window widths) (list of window heights))"
   (let ((parent (frame-root-window)))
     (let ((horiz-frame (window-total-width parent))
           (vert-frame (window-total-height parent))
@@ -157,9 +171,13 @@
       (list horiz-frame vert-frame horiz-dimens vert-dimens))))
 
 (defun windwow-get-split-window-commands (window-config)
+  "Generate split window commands to recreate a WINDOW-CONFIG."
   (windwow-get-split-window-commands-recur window-config nil nil))
 
 (defun windwow-get-split-window-commands-recur (window-config matches commands)
+  "Recursive call for generating split window commands of WINDOW-CONFIG.
+MATCHES tracks the possible matched split windows at this step of recursion
+and COMMANDS tracks current split-window-commands at this step."
   ;; more than one window
   (if (cdar (cddr window-config))
       (let ((matches (windwow-get-possible-splits window-config)))
@@ -179,6 +197,9 @@
     commands))
 
 (defun windwow-add-to-config (window-pair config)
+  "Add a WINDOW-PAIR to a window CONFIG.
+The height and width of WINDOW-PAIR are appended by 'cons to
+the list of window heights and widths, respectively."
   (let ((first-list (cl-caddr config))
         (second-list (cl-cadddr config)))
     (list (car config) (cadr config)
@@ -186,12 +207,14 @@
           (cons (cdr window-pair) second-list))))
 
 (defun windwow-unzip-cons-cells (cells)
+  "Splits CELLS, a list of lists, into list of its CARs and CADRs."
   (let ((temp (-reduce-from (lambda (memo item)
                               (list (cons (car item) (car memo))
                                     (cons (cdr item) (cadr memo)))) '(nil nil) cells)))
     (list (reverse (car temp)) (reverse (cadr temp)))))
 
 (defun windwow-remove-from-config (split-bundle config)
+  "Remove SPLIT-BUNDLE, a split-command and pair of windows, from a window CONFIG."
   (let ((first-list (cl-caddr config))
         (second-list (cl-cadddr config))
         (h-vals (cadr split-bundle))
@@ -205,6 +228,7 @@
         (cons (car config) (cons (cadr config) removed))))))
 
 (defun windwow-create-new-window (split-bundle)
+  "Create a window from SPLIT-BUNDLE, using the split-command from SPLIT-BUNDLE."
   (if (eql 'vertical (car split-bundle))
       (let ((sum-cell (cadr split-bundle)))
         (cons (+ (car sum-cell) (cdr sum-cell))
@@ -215,7 +239,8 @@
 
 ;; add in max value filtering (don't use it if it's impossibly tall)
 (defun windwow-get-possible-splits (window-config)
-  "return list of splits and windows from window-config"
+  "Get list of SPLIT-BUNDLES that exist in WINDOW-CONFIG.
+These are possible window pairs that can be merged together."
   (let ((windows (cddr window-config))
         (h-max (car window-config))
         (v-max (cadr window-config)))
@@ -224,6 +249,12 @@
       (windwow-get-possible-splits-recur horiz vert h-max v-max nil))))
 
 (defun windwow-get-possible-splits-recur (horiz vert h-max v-max directions-and-windows)
+  "Recursive call for getting split-bundles.
+HORIZ is current horizontal dimension, VERT is current vertical dimension.
+H-MAX is horiz of frame, the maximum width, V-MAX is vert of frame,
+the maximum height.
+DIRECTIONS-AND-WINDOWS is current list of split bundles, which is a list
+of split commands and window pairs."
   (if horiz
       (let ((h-matches (windwow-get-match-indices (car horiz) (cdr horiz) vert v-max))
             (v-matches (windwow-get-match-indices (car vert) (cdr vert) horiz h-max)))
@@ -234,9 +265,16 @@
     directions-and-windows))
 
 (defun windwow-get-match-indices (elem coll compare-coll compare-max)
+  "Get indices of split window match.
+Checks matches of ELEM in COLL while making sure sum of matching
+elements (same index) of COMPARE-COLL is less than COMPARE-MAX."
   (windwow-get-match-indices-recur elem coll 0 '() compare-coll compare-max))
 
 (defun windwow-get-match-indices-recur (elem coll index indices compare-coll compare-max)
+  "Recursive call for getting matching indices.
+Checks if ELEM matches the element in COLL at INDEX, using INDICES to
+track matches, while making sure sum of elements in COMPARE-COLL is less
+than COMPARE-MAX and they are the result of an exact split window command."
   (if coll
       (windwow-get-match-indices-recur elem (cdr coll) (+ 1 index)
                                        (if (let ((compare-elem-1 (car compare-coll))
@@ -251,11 +289,15 @@
     indices))
 
 (defun windwow-ordered-cons-cell (v1 v2)
+  "Return a cons cell of max and min of elements V1 and V2."
   (cons (max v1 v2)
         (min v1 v2)))
 
 ;; return value '((split-direction '(h1 h2) (v1 v2)) ... )
 (defun windwow-build-sets (indices h-set v-set direction)
+  "Create list of split-bundles.
+The split-bundles are window pairs from elements at INDICES and the
+first element of H-SET and V-SET and DIRECTION, a split-command."
   (-map (lambda (index)
           (let ((h-val (nth (+ 1 index) h-set))
                 (v-val (nth (+ 1 index) v-set)))
@@ -264,23 +306,36 @@
         indices))
 
 (defun windwow-remove-from-list (my-val list)
+  "Remove first appearance of MY-VAL from LIST."
   (-remove-first (lambda (x) (equal my-val x)) list))
 
 ;; recreate window commands with splits
 (defun windwow-get-usable-commands (window-config)
+  "Get split and switch commands from WINDOW-CONFIG."
   (let ((commands (windwow-get-split-window-commands window-config)))
     (windwow-get-switch-and-split-commands commands window-config)))
 
 (defun windwow-get-switch-and-split-commands (matches window-config)
-  "matches are '(direction (h . h) (v . v))"
+  "Get split and switch commands a list of split-bundles and window config.
+MATCHES a list of split-bundles - '(split-command (h . h) (v . v))
+and a WINDOW-CONFIG.
+This wraps 'windwow-parse-matches which returns commands in reverse order.
+The split and switch commands are used to preserve the correct nesting of windows."
   (reverse (windwow-parse-matches matches window-config)))
 
-(defun windwow-parse-matches (matches window-config)
-  "matches are '(direction (h . h) (v . v))"
-  (windwow-parse-matches-recur matches nil 0 (list (cons (car window-config)
+(defun windwow-parse-matches (split-bundles window-config)
+  "Get split and switch commands from SPLIT-BUNDLES and a WINDOW-CONFIG.
+The split-bundles are '(split-command (h . h) (v . v)).
+This is named 'parse because the split-bundles are used to generate
+the switch commands."
+  (windwow-parse-matches-recur split-bundles nil 0 (list (cons (car window-config)
                                                          (cadr window-config)))))
 
 (defun windwow-parse-matches-recur (matches commands index window-list)
+  "Recursive call for getting split and switch commands.
+MATCHES are the unused split-commands, COMMANDS are a list of split and switch
+commands.  INDEX is used to track the step of recursion and WINDOW-LIST is a
+list of windows."
   (if (windwow-is-empty matches)
       commands
     (let* ((current (nth index window-list))
@@ -298,6 +353,7 @@
                                      window-list)))))
 
 (defun windwow-merge-pair (cells)
+  "Change '((a . b) (c . d)) to '((a . c) (b . d)) of CELLS."
   (let ((cell-1 (car cells))
         (cell-2 (cadr cells)))
     (list (cons (car cell-1)
@@ -306,14 +362,16 @@
                 (cdr cell-2)))))
 
 (defun windwow-increment-window-index (index window-list)
-  "increments with mod"
+  "Increment INDEX by one while modding by length of WINDOW-LIST."
   (mod (+ 1 index) (length window-list)))
 
 (defun windwow-insert-split-window-at-index (index window-pair window-list)
+  "Insert at INDEX a WINDOW-PAIR into WINDOW-LIST."
   (-insert-at index (car window-pair)
               (-replace-at index (cadr window-pair) window-list)))
 
 (defun windwow-split-window-pair-in-direction (direction window)
+  "Split in DIRECTION a WINDOW, '(h-dim . v-dim)."
   (if (eq direction 'vertical)
       (let ((splitted (windwow-split-dimension (car window))))
         (list (cons (car splitted) (cdr window))
@@ -323,6 +381,8 @@
             (cons (car window) (cdr splitted))))))
 
 (defun windwow-split-dimension (dimension)
+  "Return DIMENSION split in 2 as a cons cell.
+If even it is halved, if not the CAR is greater than the CDR by 1."
   (if (windwow-is-even dimension)
       (let ((half (/ dimension 2)))
         (cons half half))
@@ -331,9 +391,11 @@
             (- bigger-half 1)))))
 
 (defun windwow-is-even (number)
+  "Return t if NUMBER is even."
   (= (% number 2) 0))
 
 (defun windwow-is-empty (dis-list)
+  "Return t if DIS-LIST is empty."
   (if (and (listp dis-list)
            (car dis-list))
       nil
@@ -341,12 +403,15 @@
 
 ;; execute functions
 (defun windwow-load-window-configuration-commands (commands)
+  "Load and execute a list of split and switch COMMANDS.
+Preserves buffers."
   (let ((buffers (windwow-get-buffer-list)))
     (delete-other-windows)
     (windwow-execute-split-window-commands commands)
     (windwow-load-buffer-list-buffers buffers)))
 
 (defun windwow-execute-split-window-commands (commands)
+  "Execute a list of split and switch COMMANDS."
   (-each commands (lambda (command)
                     (cond ((eql command 'vertical)
                            (split-window nil nil 'right))
@@ -358,7 +423,8 @@
 ;; window functions to bind
 ;;;###autoload
 (defun windwow-save-window-configuration (name)
-  "saves current window configuration"
+  "Save current window configuration as NAME.
+Load window configuration with 'window-load-window-configuration."
   (interactive
    (list (completing-read "Enter split window command list name: "
                           windwow-list-of-window-commands)))
@@ -366,22 +432,24 @@
     (windwow-save-window-configuration-commands name window-commands)))
 
 (defun windwow-save-window-configuration-commands (name window-commands)
+  "Internal function for saving current window configuration.
+Saves {NAME, WINDOW-COMMANDS} pair."
   (setf windwow-list-of-window-commands
         (cons (cons name window-commands) windwow-list-of-window-commands)))
 
 ;;;###autoload
-(defun windwow-load-window-configuration (prompt)
-  "loads a previously saved window configuration"
+(defun windwow-load-window-configuration (name)
+  "Load NAME, a previously saved window configuration."
   (interactive
    (list (completing-read "Load split window command list: "
                           windwow-list-of-window-commands
                           nil t "")))
-  (windwow-load-window-configuration-commands (cdr (assoc prompt windwow-list-of-window-commands))))
+  (windwow-load-window-configuration-commands (cdr (assoc name windwow-list-of-window-commands))))
 
 ;; buffer and window functions
 ;;;###autoload
 (defun windwow-load-window-configuration-and-buffer-list (commands buffers)
-  "loads a window configuration and a buffer list"
+  "Load a window configuration, COMMANDS,  and a buffer list, BUFFERS."
   (interactive
    (let* ((split-commands-name (completing-read "choose window commands: "
                                                 windwow-list-of-window-commands nil t ""))
