@@ -135,8 +135,8 @@ Switch to this list of buffers by calling 'windwow-load-buffer-list."
                                    buffer-list)))
 
 (defun windwow-save-buffer-list-args (name buffers)
-  "Store {NAME, list of BUFFERS} into state.
-Used internally by autoloaded functions."
+  "Store (NAME . BUFFERS) into state.
+BUFFERS is a list of buffers.  Used internally by autoloaded functions."
   (setf windwow-list-of-buffer-lists
         (cons (cons name buffers) windwow-list-of-buffer-lists)))
 
@@ -162,7 +162,9 @@ Used internally by autoloaded functions."
 ;; window stuff
 (defun windwow-current-frame-data ()
   "Get dimensions of windows in current frame.
-Saved as '(frame-width frame-height (list of window widths) (list of window heights))"
+Saved as '(FRAME-WIDTH FRAME-HEIGHT WINDOW-WIDTHS WINDOW-HEIGHTS)
+where WINDOW-WIDTHS is a list of window widths and WINDOW-HEIGHTS
+is a list of window heights.  This is also referred to as a window-config."
   (let ((parent (frame-root-window)))
     (let ((horiz-frame (window-total-width parent))
           (vert-frame (window-total-height parent))
@@ -198,7 +200,7 @@ and COMMANDS tracks current split-window-commands at this step."
 
 (defun windwow-add-to-config (window-pair config)
   "Add a WINDOW-PAIR to a window CONFIG.
-The height and width of WINDOW-PAIR are appended by 'cons to
+The height and width of WINDOW-PAIR are appended by ‘cons’ to
 the list of window heights and widths, respectively."
   (let ((first-list (cl-caddr config))
         (second-list (cl-cadddr config)))
@@ -207,7 +209,7 @@ the list of window heights and widths, respectively."
           (cons (cdr window-pair) second-list))))
 
 (defun windwow-unzip-cons-cells (cells)
-  "Splits CELLS, a list of lists, into list of its CARs and CADRs."
+  "Splits CELLS, a list of lists, into list of its ‘car’s and ‘cadr’s."
   (let ((temp (-reduce-from (lambda (memo item)
                               (list (cons (car item) (car memo))
                                     (cons (cdr item) (cadr memo)))) '(nil nil) cells)))
@@ -317,8 +319,11 @@ first element of H-SET and V-SET and DIRECTION, a split-command."
 
 (defun windwow-get-switch-and-split-commands (matches window-config)
   "Get split and switch commands a list of split-bundles and window config.
-MATCHES a list of split-bundles - '(split-command (h . h) (v . v))
-and a WINDOW-CONFIG.
+MATCHES a list of split-bundles - '(SPLIT-COMMAND (H1 . H2) (V1 . V2))
+and a WINDOW-CONFIG.  A SPLIT-COMMAND is the symbol ‘horizontal’
+or the symbol ‘vertical’.
+H1 and H2 are the horizontal dimensions of the window pair, and V1 and
+V2 are the vertical dimensions.
 This wraps 'windwow-parse-matches which returns commands in reverse order.
 The split and switch commands are used to preserve the correct nesting of windows."
   (reverse (windwow-parse-matches matches window-config)))
@@ -353,7 +358,7 @@ list of windows."
                                      window-list)))))
 
 (defun windwow-merge-pair (cells)
-  "Change '((a . b) (c . d)) to '((a . c) (b . d)) of CELLS."
+  "Change '((A . B) (C . D)) to '((A . C) (B . D)) of CELLS."
   (let ((cell-1 (car cells))
         (cell-2 (cadr cells)))
     (list (cons (car cell-1)
@@ -371,7 +376,9 @@ list of windows."
               (-replace-at index (cadr window-pair) window-list)))
 
 (defun windwow-split-window-pair-in-direction (direction window)
-  "Split in DIRECTION a WINDOW, '(h-dim . v-dim)."
+  "Split in DIRECTION a WINDOW, (H . V).
+H is the horizontal dimension (width) and V is the
+vertical dimension (height) of the window."
   (if (eq direction 'vertical)
       (let ((splitted (windwow-split-dimension (car window))))
         (list (cons (car splitted) (cdr window))
@@ -433,7 +440,7 @@ Load window configuration with 'window-load-window-configuration."
 
 (defun windwow-save-window-configuration-commands (name window-commands)
   "Internal function for saving current window configuration.
-Saves {NAME, WINDOW-COMMANDS} pair."
+Saves (NAME . WINDOW-COMMANDS) pair."
   (setf windwow-list-of-window-commands
         (cons (cons name window-commands) windwow-list-of-window-commands)))
 
