@@ -429,9 +429,9 @@ Preserves buffers."
 
 ;; window functions to bind
 ;;;###autoload
-(defun windwow-save-window-configuration (name)
-  "Save current window configuration as NAME.
-Load window configuration with 'window-load-window-configuration."
+(defun windwow-save-window-arrangement (name)
+  "Save current window arrangement as NAME.
+Load window arrangement with 'window-load-window-arrangement."
   (interactive
    (list (completing-read "Enter split window command list name: "
                           windwow-list-of-window-commands)))
@@ -445,8 +445,8 @@ Saves (NAME . WINDOW-COMMANDS) pair."
         (cons (cons name window-commands) windwow-list-of-window-commands)))
 
 ;;;###autoload
-(defun windwow-load-window-configuration (name)
-  "Load NAME, a previously saved window configuration."
+(defun windwow-load-window-arrangement (name)
+  "Load NAME, a previously saved window arrangement."
   (interactive
    (list (completing-read "Load split window command list: "
                           windwow-list-of-window-commands
@@ -455,8 +455,8 @@ Saves (NAME . WINDOW-COMMANDS) pair."
 
 ;; buffer and window functions
 ;;;###autoload
-(defun windwow-load-window-configuration-and-buffer-list (commands buffers)
-  "Load a window configuration, COMMANDS,  and a buffer list, BUFFERS."
+(defun windwow-load-window-arrangement-and-buffer-list (commands buffers)
+  "Load a window arrangement, COMMANDS,  and a buffer list, BUFFERS."
   (interactive
    (let* ((split-commands-name (completing-read "choose window commands: "
                                                 windwow-list-of-window-commands nil t ""))
