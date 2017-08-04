@@ -22,6 +22,17 @@ A buffer configuration is a list of buffers and a window arrangement is an arran
 ### Buffer and window ###
   * `windwow-load-window-arrangement-and-buffer-list` - loads a window arrangement and a buffer list 
 
+## Using Windwow ##
+
+Here is an example showing how to use some of the aforementioned functions:
+
+1. Switch to a frame with one window. Create a window arrangement with split and switch commands; these commands are `split-window-below` (`C-x 2`), `split-window-right` (`C-x 3`), and `other-window` (`C-x o`). Switch to a different buffer in each of these windows. 
+2. Now save this configuration with `windwow-save-window-arrangement` and `windwow-save-buffer-list`.
+3. Close all the windows except the current one with `delete-other-windows` (`C-x 1`).
+4. Now restore the window arrangement and buffer list with `windwow-load-window-arrangement-and-buffer-list`. The windows previously created should be restored in the proper arrangement with the corresponding buffers loaded inside.
+
+Unfortunately manually resized windows are not supported at the moment.
+
 ## Roadmap ##
   * Support frames with manually resized windows
   * Minor mode
