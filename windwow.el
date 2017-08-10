@@ -153,8 +153,8 @@ BUFFERS is a list of buffers.  Used internally by autoloaded functions."
 (defun windwow-load-buffer-from-list (buffer-list buffer)
   "Load BUFFER-LIST and switch to a BUFFER from that list."
   (interactive
-   (let* ((list-name (completing-read "choose buffer-list: " windwow-list-of-buffer-lists))
-          (b-cur (completing-read "choose buffer: " (cdr (assoc list-name
+   (let* ((list-name (completing-read "Choose buffer-list: " windwow-list-of-buffer-lists))
+          (b-cur (completing-read "Choose buffer: " (cdr (assoc list-name
                                                                 windwow-list-of-buffer-lists)))))
      (list list-name b-cur)))
   (switch-to-buffer buffer))
@@ -433,7 +433,7 @@ Preserves buffers."
   "Save current window arrangement as NAME.
 Load window arrangement with 'window-load-window-arrangement."
   (interactive
-   (list (completing-read "Enter split window command list name: "
+   (list (completing-read "Enter window arrangement name: "
                           windwow-list-of-window-commands)))
   (let ((window-commands (windwow-get-usable-commands (windwow-current-frame-data))))
     (windwow-save-window-configuration-commands name window-commands)))
@@ -448,7 +448,7 @@ Saves (NAME . WINDOW-COMMANDS) pair."
 (defun windwow-load-window-arrangement (name)
   "Load NAME, a previously saved window arrangement."
   (interactive
-   (list (completing-read "Load split window command list: "
+   (list (completing-read "Load window arrangement: "
                           windwow-list-of-window-commands
                           nil t "")))
   (windwow-load-window-configuration-commands (cdr (assoc name windwow-list-of-window-commands))))
@@ -458,9 +458,9 @@ Saves (NAME . WINDOW-COMMANDS) pair."
 (defun windwow-load-window-arrangement-and-buffer-list (commands buffers)
   "Load a window arrangement, COMMANDS,  and a buffer list, BUFFERS."
   (interactive
-   (let* ((split-commands-name (completing-read "choose window commands: "
+   (let* ((split-commands-name (completing-read "Choose window arrangement: "
                                                 windwow-list-of-window-commands nil t ""))
-          (list-name (completing-read "choose buffer-list: " windwow-list-of-buffer-lists nil t "")))
+          (list-name (completing-read "Choose buffer-list: " windwow-list-of-buffer-lists nil t "")))
      (list (assoc split-commands-name
                   windwow-list-of-window-commands)
            (assoc list-name
